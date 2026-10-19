@@ -2,4 +2,4 @@
 
 Team Members:
 - Nicolas J. Papadopoulos
-- Lucas Theophanou
+- Lucas Theophanous
