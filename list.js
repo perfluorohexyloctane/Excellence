@@ -23,7 +23,8 @@ fetch(API_URL)
             // create an item in the list
             let item = document.createElement("li");
             // construct the url with the attributes
-            item.innerHTML = "<a href='start.html?uuid=" + hunts[i].uuid + "'>" + hunts[i].name + "</a>";
+            item.innerHTML = "<a href='start.html?uuid=" + hunts[i].uuid + "&player=Excellence&app=ExcellenceApp" + "'>" + hunts[i].name + "</a>";
+            item.innerHTML = "<a href='start.html?uuid=" + hunts[i].uuid + "&player=Excellence&app=ExcellenceApp" + "'>" + hunts[i].name + "</a>";
             // add it to the list
             list.appendChild(item);
         }
