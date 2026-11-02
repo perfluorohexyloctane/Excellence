@@ -1,0 +1,41 @@
+/* the page itself and the font */
+body {
+    font-family: sans-serif;
+    max-width: 600px; /* size of the page for comfortable reading */
+    margin: 40px auto; /* 40 pixel vertical border, centered horizontally */
+}
+
+/* treasure hunts container list -- the list itself */
+#challenges {
+    list-style: none; /* remove bullet points */
+    padding: 0;
+}
+
+/* individual treasure hunt list items */
+#challenges li {
+    background-color: deepskyblue; /* button colour */
+    border: 1px solid #087ea4; /* outline colour */
+    border-radius: 10px; /* outline width */
+    padding: 20px; /* padding of the button inside */
+    margin: 10px; /* distance between buttons */
+    font-size: 20px;
+    cursor: pointer; /* make the cursor a pointer when hovering */
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.35); /* add a shadow to the buttons */
+}
+
+/* individual items upon hover */
+#challenges li:hover {
+    background-color: dodgerblue; /* slightly darken the button upon hover */
+}
+
+/* individual items when being clicked */
+#challenges li.active {
+    background-color: #0f63c2; /* darken even more when clicked */
+}
+
+/* hyperlinked text inside the treasure hunt list */
+#challenges a {
+    display: block; /* make the entire block clickable rather than just the text */
+    color: white; /* make text white instead of blue due to link */
+    text-decoration: none; /* remove underline */
+}
