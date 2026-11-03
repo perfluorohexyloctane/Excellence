@@ -1,1 +1,103 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Meeting Notes</title>
+    <!-- External library marked.js that converts raw Markdown text into HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: beige;
+        }
+        h1{
+            border-bottom: 2px solid black;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        h3{
+            border: 2px solid black;
+            text-align: center;
+            padding: 5px;
+            background-color: white;
+        }
+        table{
+            width: 100%;
+            border-collapse: collapse;
+            border-color: black;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: center;
+            border: 1px solid black;
+        }
+        button{
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Meeting History</h1>
+    <!-- Container wrapper for table and viewer -->
+    <div class="layout">
+        <!-- Table container for the meeting history -->
+        <div class="table-container">
+            <table border="1">
+                <thead>
+                <tr>
+                    <td>Number</td>
+                    <td>Date</td>
+                </tr>
+                </thead>
+                <!-- Target body where rows are inserted by the script -->
+                <tbody id="meetings"></tbody>
+            </table>
+        </div>
+        <!-- Container where the notes from the markdown files will be displayed-->
+        <div id="viewer">
+            <h3>Please select a meeting from above</h3>
+        </div>
+    </div>
+</body>
+<script>
+    //List of the markdown files
+    const meetingFiles = ["Meeting-22-10-2026.md","Meeting-02-11-2026.md"];
+    //Reference to thee <tbody> element where meeting rows will be added
+    const meetingList=document.getElementById("meetings");
+    for(let i = 0; i < meetingFiles.length; i++) {
+        //Create a new table row <tr> element
+        let tr=document.createElement("tr");
+        //Create first cell <td> for the row number
+        let tdNum=document.createElement("td");
+        tdNum.textContent= i + 1;
+        //Create second cell <td> to hold the button
+        let tdBut=document.createElement("td");
+        //Create the button element and format its text content
+        let button = document.createElement("button");
+        button.textContent=meetingFiles[i].replace("Meeting-","").replace(".md","");
+        //Add an asynchronous click event handler to load the md file
+        button.addEventListener("click",async ()=>{
+            try{
+                //fetch the markdown file content
+                const response=await fetch(`/Meeting Notes/${meetingFiles[i]}`);
+                //read the response as plain text
+                const markdownText=await response.text();
+                //Convert markdown into clean HTML
+                document.getElementById("viewer").innerHTML=marked.parse(markdownText);
+            }catch(e){
+                alert("Something went wrong!");
+            }
+        });
+        //Append button to its cell, then cells to the row
+        tdBut.appendChild(button);
+        tr.appendChild(tdNum);
+        tr.appendChild(tdBut);
+        //Append row to the tbody
+        meetingList.appendChild(tr);
+    }
+</script>
+</html>
