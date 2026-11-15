@@ -1,79 +1,96 @@
-function getData() {
-    const dataURL = "https://codecyprus.org/th/api/list";
-    let sessionID;
-    // 1. Fetch available treasure hunts
-    fetch(dataURL)
+//Global variable to store session id
+let sessionID;
+//Extract the url query string parameters
+let params = new URLSearchParams(location.search);
+let treasureHuntID = params.get("uuid");
+let appName = params.get("app");
+//Append a timestamp to the player's name so the server doesn't get duplicate error
+//Is the player name stored in the server and never cleared from the database?? TBD
+let playerName= params.get("player")+Date.now();
+const startingURL = `https://codecyprus.org/th/api/start?player=${playerName}&app=${appName}&treasure-hunt-id=${treasureHuntID}`;
+//Fetch treasure hunt start API to create session
+fetch(startingURL)
+    .then(response => {
+        //check the network response success
+        if (!response.ok)
+            throw new Error("Start API error: " + response.statusText);
+        return response.json();
+    })
+    .then(listData => {
+        //Check if the server created the session
+        if (listData.status === "OK") {
+            sessionID = listData.session; //session token
+            let questionURL = `https://codecyprus.org/th/api/question?session=${sessionID}`; //Build question API url
+            console.log("Session created successfully:", sessionID);
+            //Fetch the first question for the mission
+            fetch(questionURL)
+                .then(response => {
+                    if (!response.ok)
+                        throw new Error("Question API error: " + response.statusText);
+                    return response.json();
+                })
+                .then(listData => {
+                    //check if the question was retrieved
+                    if(listData.status === "OK") {
+                        //find the HTML paragraph element to display the question
+                        const questElement = document.getElementById("q");
+                        questElement.innerHTML = listData.questionText;
+                        console.log("Question fetched successfully!");
+                    }
+                    else
+                        console.error("Failed to fetch question:", listData.errorMessages);
+                })
+                .catch(error => {
+                    console.error("An error occurred during execution:", error);
+                });
+        }
+        else
+            console.error("Failed to start session:", listData.errorMessages);
+        })
+    .catch(error => {
+        console.error("An error occurred during execution:", error);
+    });
+//When the user clicks the "Submit-Answer" button its activated
+function submitUserAnswer() {
+    //Extracts the value in the input field
+    let answer = document.getElementById("userAnswer").value;
+    //Confirm that the input is not empty
+    if(!answer.trim()){
+        alert("Please enter a valid answer");
+        return;
+    }
+    //Build the url to submit the user's answer
+    let answerURL = `https://codecyprus.org/th/api/answer?session=${sessionID}&answer=${answer}`;
+    //Send the answer to the API
+    fetch(answerURL)
         .then(response => {
             if (!response.ok) {
-                throw new Error("List API error: " + response.statusText);
+                throw new Error("Answer API error: " + response.statusText);
             }
             return response.json();
         })
+        //Check if the server received the answer submission
         .then(listData => {
-            // Access the first treasure hunt inside the treasureHunts array
-            let treasureHuntID = listData.treasureHunts[0].uuid;
-            let appName = listData.treasureHunts[0].name;
-            let playerName = "AndrewK_" + Date.now();
-            // 2. Start game session
-            let startingURL = `https://codecyprus.org/th/api/start?player=${playerName}&app=${appName}&treasure-hunt-id=${treasureHuntID}`;
-
-            // Return the fetch promise to chain it to the next .then()
-            return fetch(startingURL);
-        })
-        .then(response2 => {
-            if (!response2.ok) {
-                throw new Error("Start API error: " + response2.statusText);
-            }
-            return response2.json();
-        })
-        .then(listData2 => {
-            if (listData2.status === "OK") {
-                sessionID = listData2.session;
-                console.log("Session created successfully:", sessionID);
-                let questionURL = `https://codecyprus.org/th/api/question?session=${sessionID}`;
-                return fetch(questionURL);
+            const resultMsg=document.getElementById("resultMessage");
+            if (listData.status === "OK") {
+                console.log("Answer fetched successfully!");
+                //Checks if the answer submitted by the user is correct/incorrect
+                if(listData.correct){
+                    resultMsg.textContent = "Correct!";
+                    resultMsg.style.color = "green";
+                }
+                else{
+                    resultMsg.textContent = "Incorrect.";
+                    resultMsg.style.color = "red";
+                }
             }
             else{
-                console.error("Failed to start session:", listData2.errorMessages);
-                throw new Error("Failed to start session");
-            }
-        })
-        .then(response3 => {
-            if (!response3.ok) {
-                throw new Error("Question API error: " + response3.statusText);
-            }
-            return response3.json();
-        })
-        .then(listData3 => {
-            if(listData3.status === "OK") {
-                console.log("Questions fetched successfully:");
-                console.log(listData3.questionText);
-                let answer = 42;
-                let answerURL = `https://codecyprus.org/th/api/answer?session=${sessionID}&answer=${answer}`;
-                return fetch(answerURL);
-            }
-            else{
-                console.error("Failed to fetch question:", listData3.errorMessages);
-            }
-        })
-        .then(response4 => {
-            if (!response4.ok) {
-                throw new Error("Answer API error: " + response4.statusText);
-            }
-            return response4.json();
-        })
-        .then(listData4 => {
-            if (listData4.status === "OK") {
-                console.log("Answer fetched successfully:");
-                let correctAnswer = listData4.correct;
-                let message=listData4.message;
-                console.log(message+correctAnswer);
+                console.log("Failed to fetch answer:", listData.errorMessages);
+                resultMsg.textContent = "Error: "+listData.errorMessages;
+                resultMsg.style.color = "orange";
             }
         })
         .catch(error => {
             console.error("An error occurred during execution:", error);
         });
 }
-
-// Run application
-getData();
