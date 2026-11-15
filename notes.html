@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Notes - Excellence Treasure Hunt</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRT7QR6MGD"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-RRT7QR6MGD');
+    </script>
+    <!-- External library marked.js that converts raw Markdown text into HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 40px auto;
+            max-width: 850px;
+            padding: 0 20px;
+            background-color: #f7f8fa;
+            color: #1f2937;
+        }
+        h1 {
+            border-bottom: 2px solid #111827;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 16px;
+            color: #0369a1;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        #viewer {
+            margin-top: 24px;
+            border: 1px solid #d1d5db;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+        }
+        #viewer h3.placeholder {
+            text-align: center;
+            color: #6b7280;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            background-color: white;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: center;
+            border: 1px solid #d1d5db;
+        }
+        th {
+            background-color: #0f172a;
+            color: white;
+        }
+        button {
+            padding: 6px 14px;
+            cursor: pointer;
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
+        button:hover {
+            background-color: #0369a1;
+        }
+    </style>
+</head>
+<body>
+<a class="back-link" href="index.html">&larr; Back to Home</a>
+<h1>Meeting History &amp; Development Notes</h1>
+<div class="layout">
+    <div class="table-container">
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Meeting Date</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="meetings"></tbody>
+        </table>
+    </div>
+    <div id="viewer">
+        <h3 class="placeholder">Please select a meeting from above</h3>
+    </div>
+</div>
+
+<script>
+    const meetingFiles = [
+        "Meeting-22-10-2026.md",
+        "Meeting-02-11-2026.md",
+        "Meeting-15-11-2026.md"
+    ];
+    const meetingList = document.getElementById("meetings");
+
+    for (let i = 0; i < meetingFiles.length; i++) {
+        const tr = document.createElement("tr");
+        const tdNum = document.createElement("td");
+        tdNum.textContent = i + 1;
+
+        const tdDate = document.createElement("td");
+        tdDate.textContent = meetingFiles[i].replace("Meeting-", "").replace(".md", "");
+
+        const tdBtn = document.createElement("td");
+        const button = document.createElement("button");
+        button.textContent = "View Notes";
+        button.addEventListener("click", async () => {
+            try {
+                const response = await fetch(`Meeting Notes/${meetingFiles[i]}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const markdownText = await response.text();
+                document.getElementById("viewer").innerHTML = marked.parse(markdownText);
+            } catch (e) {
+                document.getElementById("viewer").innerHTML =
+                    `<p style="color:#b91c1c;">Could not load ${meetingFiles[i]} (${e.message}). Serve the site via a local server or GitHub Pages.</p>`;
+            }
+        });
+
+        tdBtn.appendChild(button);
+        tr.appendChild(tdNum);
+        tr.appendChild(tdDate);
+        tr.appendChild(tdBtn);
+        meetingList.appendChild(tr);
+    }
+</script>
+</body>
+</html>
