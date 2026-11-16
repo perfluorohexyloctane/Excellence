@@ -3,11 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Start treasure hunt</title>
+    <script src="cookies.js"></script>
     <script src="apiFetcher.js"></script><!--Loads the API javaScript file-->
 </head>
 <body>
-    <h1 id="q">Loading question...</h1>
-    <div id="answer-container">
+    <div id="playerNameEntry" style="display: none;">
+        <h1>Enter the player's name</h1>
+        <input type="text" id="playerName" placeholder="Enter the name here">
+        <button onclick=getPlayerNameEntry()>Submit</button>
+    </div>
+    <div id="answerContainer" style="display: none;">
+        <h1 id="q">Loading question...</h1>
         <input type="text" id="userAnswer" placeholder="Enter your answer here"><!--Input field for the answer-->
         <button onclick=submitUserAnswer()>Submit Answer</button>
         <p id="resultMessage" style="font-weight: bold"></p><!--Feedback area for the answer-->

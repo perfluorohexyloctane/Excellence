@@ -21,7 +21,7 @@ function getChallenges() {
                 // create list item in challenges.html
                 let item = document.createElement("li");
                 // construct the url with the attributes
-                item.innerHTML = "<a href='start.html?uuid=" + hunts[i].uuid + "&player=Excellence&app=ExcellenceApp'>" + hunts[i].name + "</a>";
+                item.innerHTML = "<a href='start.html?uuid=" + hunts[i].uuid + "&app=ExcellenceApp'>" + hunts[i].name + "</a>";
                 list.appendChild(item);
             }
         })
