@@ -5,7 +5,7 @@ let params = new URLSearchParams(location.search);
 let treasureHuntID = params.get("uuid");
 let appName = params.get("app");
 //Append a timestamp to the player's name so the server doesn't get duplicate error
-//Is the player name stored in the server and never cleared from the database?? TBD
+//  Is the player name stored in the server and never cleared from the database?? TBD
 let playerName= params.get("player")+Date.now();
 const startingURL = `https://codecyprus.org/th/api/start?player=${playerName}&app=${appName}&treasure-hunt-id=${treasureHuntID}`;
 function fetchQuestion() {
