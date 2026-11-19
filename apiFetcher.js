@@ -4,13 +4,6 @@ let params = new URLSearchParams(location.search);
 let treasureHuntID = params.get("uuid");
 let appName = params.get("app");
 let playerName;
-//Clears active session cookies and navigates to the leaderboard.html once the treasure hunt is completed or run out of time
-function endSessionAndRedirect() {
-    deleteCookie("playerName");
-    deleteCookie("sessionID");
-    deleteCookie("treasureHuntID");
-    location.href="leaderboard.html";
-}
 //retrieves the current question and redirects to leadboard.html once the hunt is marked completed
 function fetchQuestion() {
     const questionURL = `https://codecyprus.org/th/api/question?session=${encodeURIComponent(sessionID)}`;
@@ -23,7 +16,7 @@ function fetchQuestion() {
         .then(questionData => {
             if(questionData.status === "OK") {
                 if (questionData.completed){
-                    endSessionAndRedirect();
+                    location.href="leaderboard.html";
                     return;
                 }
                 canBeSkipped = questionData.canBeSkipped;
@@ -32,8 +25,6 @@ function fetchQuestion() {
             else {
                 //Saved session is invalid or expired
                 console.error("Failed to fetch question:" + questionData.errorMessages);
-                deleteCookie("playerName");
-                deleteCookie("sessionID");
                 alert("Session invalid or expired. Please start a new game.");
                 location.reload();
             }
@@ -69,7 +60,7 @@ function submitUserAnswer() {
                     //Handle hunt timer expiring while the user was viewing the question
                     if(errorText.includes("Finished session") || errorText.includes("run out of time")){
                         alert("Session invalid or expired.");
-                        endSessionAndRedirect();
+                        location.href="leaderboard.html";
                         return;
                     }
                     resultMsg.textContent="Error: "+errorText;
@@ -89,7 +80,7 @@ function submitUserAnswer() {
             if (answerData.status === "OK") {
                 resultMsg.textContent = answerData.message;
                 if (answerData.completed) {
-                    endSessionAndRedirect();
+                    location.href="leaderboard.html";
                     return;
                 }
                 //Only clear the input and advance if the answer was correct
@@ -104,7 +95,7 @@ function submitUserAnswer() {
                 //Handle hunt timer expiring while the user was typing an answer
                 if(errorText.includes("Finished session") || errorText.includes("run out of time")){
                     alert("Session invalid or expired.");
-                    endSessionAndRedirect();
+                    location.href="leaderboard.html";
                     return;
                 }
                 resultMsg.textContent="Error: "+errorText;
@@ -112,16 +103,81 @@ function submitUserAnswer() {
         })
         .catch(error => console.error("An error occurred during execution:", error));
 }
-//Validates the player input, switches to the question view, and initiates a new API session
-function getPlayerNameEntry() {
-    let value = document.getElementById("playerName").value.trim();
-    if(value===""){
-        alert("Please enter a player name first.");
+//Calls /leaderboard to fetch and display the leaderboard and then the /score to fetch and display the player with his score
+function displayLeaderboard(){
+    //Fall back to the cookie because leaderboard.html loads in a fresh page where sessionID starts undefined
+    const activeSession= sessionID || getCookie("sessionID");
+    if(!activeSession){
+        console.error("No sessionID found for leaderboard.");
+        alert("No active session found");
         return;
     }
-    document.getElementById("playerNameEntry").style.display="none";
-    document.getElementById("answerContainer").style.display="block";
-    createNewSession(value);
+    //encodeURIComponent safely escapes characters in the session token
+    const leaderboardURL=`https://codecyprus.org/th/api/leaderboard?session=${encodeURIComponent(activeSession)}&sorted&limit=10`;
+    const scoreURL=`https://codecyprus.org/th/api/score?session=${encodeURIComponent(activeSession)}`;
+    //Fetch and render the leaderboard table
+    fetch(leaderboardURL)
+        .then(response => {
+            if (!response.ok)
+                throw new Error("Leaderboard API error: " + response.statusText);
+            return response.json();
+        })
+        .then(leaderboardData => {
+            if(leaderboardData.status === "OK"){
+                document.getElementById("leaderboardHeader").innerText=leaderboardData.treasureHuntName;
+                document.getElementById("leaderboard").style.display="block";
+                const users=leaderboardData.leaderboard;
+                const tableHeader=document.getElementById("usersTableHeader");
+                const tableBody = document.getElementById("usersTableBody");
+                //Clear old rows
+                tableHeader.innerHTML="";
+                tableBody.innerHTML="";
+                const headerRow=document.createElement("tr");
+                const columnInputs=["Name","Score","Completion Date"];
+                columnInputs.forEach(headData=>{
+                    const header=document.createElement("th");
+                    header.innerText=headData;
+                    headerRow.appendChild(header);
+                });
+                tableHeader.appendChild(headerRow);
+                users.forEach(user => {
+                    const row = document.createElement("tr");
+                    const formattedTime=new Date(user.completionTime).toLocaleDateString();
+                    const values =[user.player,user.score,formattedTime];
+                    values.forEach(text => {
+                        const cell=document.createElement("td");
+                        cell.textContent=text;
+                        row.appendChild(cell);
+                    });
+                    tableBody.appendChild(row);
+                });
+            }
+            else{
+                console.error("Failed to fetch the leaderboard table");
+                alert("Failed to fetch the leaderboard table"+leaderboardData.errorMessages);
+            }
+        })
+        .catch(error => console.error("An error occurred during execution:"+error));
+    //Fetch and render the current player's score below the leaderboard
+    fetch(scoreURL)
+        .then(response => {
+            if (!response.ok)
+                throw new Error("Score API error: " + response.statusText);
+            return response.json();
+        })
+        .then(scoreData => {
+            if(scoreData.status === "OK"){
+                const scoreEl=document.getElementById("playerScore");
+                const playerEl = document.getElementById("scorePlayerName");
+                if(scoreEl)
+                    scoreEl.textContent = scoreData.score;
+                if(playerEl&&scoreData.player)
+                    playerEl.textContent=scoreData.player;
+            }
+            else
+                console.error("Failed to fetch player score"+scoreData.errorMessages);
+        })
+        .catch(error=>console.error("An error occurred during execution:", error));
 }
 //Calls /start to register a new player session and persists session details in cookies
 function createNewSession(playerName) {
@@ -166,4 +222,28 @@ function startGame() {
         document.getElementById("playerNameEntry").style.display = "block";
     }
 }
-document.addEventListener("DOMContentLoaded", startGame);
+//Validates the player input, switches to the question view, and initiates a new API session
+function getPlayerNameEntry() {
+    let value = document.getElementById("playerName").value.trim();
+    if(value===""){
+        alert("Please enter a player name first.");
+        return;
+    }
+    document.getElementById("playerNameEntry").style.display="none";
+    document.getElementById("answerContainer").style.display="block";
+    createNewSession(value);
+}
+//Deletes the cookies and redirects the player to the main page
+function refreshGame() {
+    deleteCookie("playerName");
+    deleteCookie("sessionID");
+    deleteCookie("treasureHuntID");
+    const url=new URL("index.html",location.href);
+    location.href=url.toString();
+}
+document.addEventListener("DOMContentLoaded", () => {
+    //Only run the game starter on pages that have the game UI
+    if(document.getElementById("playerNameEntry") && document.getElementById("answerContainer")){
+        startGame();
+    }
+});

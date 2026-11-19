@@ -3,13 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>LEADERBOARD</title>
-<!--    <script src="apiFetcher.js"></script>-->
+    <script src="cookies.js"></script>
+    <script src="apiFetcher.js"></script>
 </head>
 <body>
-
-
-
-<script></script>
-
+    <h1 id="leaderboardHeader">Loading Leaderboard...</h1>
+    <div id="leaderboard" style="display: none;">
+        <table id="usersTable">
+            <thead id="usersTableHeader"></thead>
+            <tbody id="usersTableBody"></tbody>
+        </table>
+        <div id="playerScoreSection">
+            <p><b>Player: </b><span id="scorePlayerName">-</span></p>
+            <p><b>Score: </b><span id="playerScore">-</span></p>
+        </div>
+        <button id="menuButton" onclick=refreshGame()>Main menu</button>
+    </div>
 </body>
+<script>
+    //ensures usersTableBody exists before JavaScript tries to grab it
+    document.addEventListener('DOMContentLoaded', displayLeaderboard);
+</script>
 </html>
