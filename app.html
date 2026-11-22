@@ -26,13 +26,23 @@
 
 <main class="app-container">
     <h1 class="page-title">Available Treasure Hunts</h1>
-    <p class="page-subtitle">Choose a live CodeCyprus Treasure Hunt below to start or resume your adventure.</p>
+    <p class="page-subtitle">Select a CodeCyprus Treasure Hunt below to begin or resume your session.</p>
+
+    <div class="toolbar">
+        <input type="search" id="huntSearch" class="input-field" placeholder="Filter treasure hunts by name..." aria-label="Filter treasure hunts">
+        <button type="button" id="refreshHuntsBtn" class="btn btn-secondary">Refresh</button>
+    </div>
 
     <div id="statusBanner" class="status-banner" role="alert"></div>
 
-    <ul id="challenges" class="challenge-list"></ul>
+    <ul id="challenges" class="challenge-list" aria-live="polite">
+        <li class="skeleton-card" aria-hidden="true"></li>
+        <li class="skeleton-card" aria-hidden="true"></li>
+        <li class="skeleton-card" aria-hidden="true"></li>
+    </ul>
 </main>
 
+<script src="cookies.js"></script>
 <script src="list.js"></script>
 </body>
 </html>
