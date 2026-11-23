@@ -10,9 +10,9 @@ const filesToCache = [
     '../start.html',
     '../css/style.css',
     '../css/theme.css',
-    './apiFetcher.js',
-    './cookies.js',
-    './list.js'
+    'apiFetcher.js',
+    'cookies.js',
+    'list.js'
 ];
 //Start the service worker and cache all of the app's content.
 self.addEventListener('install', function(e) {
