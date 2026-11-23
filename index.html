@@ -11,6 +11,13 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-RRT7QR6MGD');
+
+    window.addEventListener('load', () => {
+      'use strict';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./js/serviceWorker.js');
+      }
+    });
   </script>
 </head>
 <body>
