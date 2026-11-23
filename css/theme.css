@@ -253,3 +253,108 @@ a {
         padding: 16px;
     }
 }
+
+/* Search & Toolbar */
+.toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.toolbar .input-field {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+/* Rich Hunt Card */
+.hunt-card-link {
+    display: block;
+    padding: 18px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.hunt-card-link:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.hunt-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.hunt-card-title {
+    margin: 0;
+    font-size: 1.12rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.hunt-card-desc {
+    margin: 0 0 12px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+}
+
+.badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+}
+
+.badge-prize {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-resume {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge-active {
+    background: #e0f2fe;
+    color: #075985;
+}
+
+/* Skeleton Loading (from Week 8a Design & Usability) */
+.skeleton-card {
+    height: 112px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.3s infinite linear;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+}

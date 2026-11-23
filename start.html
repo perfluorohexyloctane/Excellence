@@ -2,21 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Start treasure hunt</title>
-    <script src="js/cookies.js"></script>
-    <script src="js/apiFetcher.js"></script><!--Loads the API javaScript file-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Session - Excellence Treasure Hunt</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRT7QR6MGD"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-RRT7QR6MGD');
+    </script>
 </head>
 <body>
-    <div id="playerNameEntry" style="display: none;">
-        <h1>Enter the player's name</h1>
-        <input type="text" id="playerName" placeholder="Enter the name here">
-        <button onclick=getPlayerNameEntry()>Submit</button>
-    </div>
-    <div id="answerContainer" style="display: none;">
-        <h1 id="q">Loading question...</h1>
-        <input type="text" id="userAnswer" placeholder="Enter your answer here"><!--Input field for the answer-->
-        <button onclick=submitUserAnswer()>Submit Answer</button>
-        <p id="resultMessage" style="font-weight: bold"></p><!--Feedback area for the answer-->
-    </div>
+<header class="topbar">
+    <a class="topbar-brand" href="app.html">&larr; Hunts</a>
+    <nav class="topbar-nav" aria-label="Session navigation">
+        <a href="index.html">Home</a>
+        <a href="app.html" class="active">Play</a>
+        <a href="notes.html">Notes</a>
+    </nav>
+</header>
+
+<main class="app-container">
+    <div id="sessionBanner" class="status-banner" role="alert"></div>
+
+    <!-- Resume Existing Session Card -->
+    <section id="resumeSessionCard" class="card" style="display: none;">
+        <h1 class="page-title">Unfinished Hunt Found</h1>
+        <p class="page-subtitle">
+            Welcome back, <strong id="resumePlayerName"></strong>! You have an active session for
+            <strong id="resumeHuntName">this treasure hunt</strong>.
+        </p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary" onclick="resumeSavedSession()">Resume Game</button>
+            <button type="button" class="btn btn-secondary" onclick="startFreshSessionPrompt()">Start New Game</button>
+        </div>
+    </section>
+
+    <!-- Player Name Entry Card -->
+    <section id="playerNameEntry" class="card" style="display: none;">
+        <h1 class="page-title" id="entryHuntTitle">Join Treasure Hunt</h1>
+        <p class="page-subtitle">Choose a unique player or team name to register your session on the leaderboard.</p>
+        <form id="playerNameForm" onsubmit="event.preventDefault(); getPlayerNameEntry();">
+            <label for="playerName" style="display:block; font-weight:600; margin-bottom:6px;">Player / Team Name</label>
+            <input type="text" id="playerName" class="input-field" placeholder="e.g. TeamExcellence" autocomplete="nickname" required>
+            <button type="submit" id="startBtn" class="btn btn-primary btn-block">Start Treasure Hunt</button>
+        </form>
+    </section>
+
+    <!-- Active Question Container -->
+    <section id="answerContainer" class="card" style="display: none;">
+        <h1 id="q" class="page-title">Loading question...</h1>
+        <form id="answerForm" onsubmit="event.preventDefault(); submitUserAnswer();">
+            <input type="text" id="userAnswer" class="input-field" placeholder="Enter your answer here" autocomplete="off">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+                <button type="submit" id="submitAnswerBtn" class="btn btn-primary" style="flex: 1;">Submit Answer</button>
+                <button type="button" id="skipBtn" class="btn btn-secondary" onclick="skipQuestion()" style="display: none;">Skip Question</button>
+            </div>
+        </form>
+        <p id="resultMessage" class="status-banner" style="margin-top: 12px;"></p>
+    </section>
+</main>
+
+<script src="js/cookies.js"></script>
+<script src="js/apiFetcher.js"></script>
 </body>
 </html>
