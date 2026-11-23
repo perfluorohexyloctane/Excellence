@@ -1,0 +1,24 @@
+{
+  "name":"Excellence Client",
+  "short_name":"Excellence",
+  "lang":"en-US",
+  "start_url":"index.html",
+  "display":"standalone",
+  "background_color":"teal",
+  "theme_color":"teal",
+  "icons":
+  [
+    {
+      "src": "assets/icon.png",
+      "sizes":"512x512",
+      "type":"image/png",
+      "purpose":"maskable"
+    },
+    {
+      "src":"assets/icon.png",
+      "sizes":"512x512",
+      "type":"image/png",
+      "purpose":"any"
+    }
+  ]
+}
