@@ -1,6 +1,6 @@
 const cacheName = 'excellence-v1';
 const filesToCache = [
-    '../',
+    '../manifest.json',
     '../index.html',
     '../app.html',
     '../challenges.html',
