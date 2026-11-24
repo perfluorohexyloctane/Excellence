@@ -103,7 +103,8 @@
         "Meeting-22-10-2026.md",
         "Meeting-02-11-2026.md",
         "Meeting-15-11-2026.md",
-        "Report-22-11-2026.md"
+        "Report-22-11-2026.md",
+        "Meeting-23-11-2026.md"
     ];
     const meetingList = document.getElementById("meetings");
 
@@ -113,7 +114,7 @@
         tdNum.textContent = i + 1;
 
         const tdDate = document.createElement("td");
-        tdDate.textContent = meetingFiles[i].replace("Meeting-", "").replace(".md", "");
+        tdDate.textContent = meetingFiles[i].replace("Meeting-", "").replace("Report-","").replace(".md", "");
 
         const tdBtn = document.createElement("td");
         const button = document.createElement("button");

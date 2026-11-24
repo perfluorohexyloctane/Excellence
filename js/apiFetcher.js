@@ -12,10 +12,10 @@ const appName = params.get("app") || "ExcellenceApp";
 const huntNameParam = params.get("name") || "Treasure Hunt";
 const huntDurationParam = Number(params.get("duration") || 0);
 /*
- * Displays or clears a status/error banner on the page.
- * @param {string} elementId - The ID of the banner element (e.g., "sessionBanner", "resultMessage")
- * @param {string} message - Text to display; pass an empty string to hide the banner
- * @param {string} type - Styling modifier class ("info", "success", or "error")
+ Displays or clears a status/error banner on the page
+ @param {string} elementId - The ID of the banner element (e.g., "sessionBanner", "resultMessage")
+ @param {string} message - Text to display; pass an empty string to hide the banner
+ @param {string} type - Styling modifier class ("info", "success", or "error")
 */
 function setBanner(elementId, message, type) {
     const el = document.getElementById(elementId);
@@ -29,19 +29,14 @@ function setBanner(elementId, message, type) {
     el.className = `status-banner visible ${type || "info"}`;
     el.textContent = message;
 }
-/*
- * Switches the visible UI card on start.html by showing only the requested section
- * and hiding the remaining two.
-*/
+//Switches the visible UI card on start.html by showing only the requested section and hiding the remaining two.
 function showView(viewId) {
     ["resumeSessionCard", "playerNameEntry", "answerContainer"].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.style.display = id === viewId ? "block" : "none";
     });
 }
-/*
- * Removes all saved treasure hunt session cookies (uses deleteCookie from cookies.js).
-*/
+//Removes all saved treasure hunt session cookies (uses deleteCookie from cookies.js)
 function clearSessionCookies() {
     deleteCookie("playerName");
     deleteCookie("sessionID");
@@ -50,8 +45,8 @@ function clearSessionCookies() {
     deleteCookie("huntMaxDuration");
 }
 /*
- * Fetches the current question from the /question endpoint using the active sessionID.
- * Redirects to leaderboard.html if the hunt is completed, or resets to name entry if expired.
+ Fetches the current question from the /question endpoint using the active sessionID.
+ Redirects to leaderboard.html if the hunt is completed, or resets to name entry if expired.
 */
 function fetchQuestion() {
     const questionURL = `${API_BASE}/question?session=${encodeURIComponent(sessionID)}`;
@@ -86,10 +81,7 @@ function fetchQuestion() {
             setBanner("sessionBanner", `Network error while loading question: ${error.message}`, "error");
         });
 }
-/*
- * Submits the user's typed answer to the /answer endpoint and handles feedback,
- * progression to the next question, or redirection on hunt completion/timeout.
-*/
+//Submits the user's typed answer to the /answer endpoint and handles feedback, progression to the next question, or redirection on hunt completion/timeout
 function submitUserAnswer() {
     const input = document.getElementById("userAnswer");
     const answer = input ? input.value.trim() : "";
@@ -133,18 +125,14 @@ function submitUserAnswer() {
             setBanner("resultMessage", `Could not submit answer: ${error.message}`, "error");
         });
 }
-/*
- * Enables/disables and shows/hides the Skip Question button based on `canBeSkipped`.
-*/
+// Enables/disables and shows/hides the Skip Question button based on canBeSkipped
 function syncSkipButton() {
     const skipBtn = document.getElementById("skipBtn");
     if (!skipBtn) return;
     skipBtn.disabled = !canBeSkipped;
     skipBtn.style.display = canBeSkipped ? "inline-block" : "none";
 }
-/*
- * Calls the /skip endpoint to bypass the current question if skipping is allowed.
-*/
+// Calls the /skip endpoint to bypass the current question if skipping is allowed
 function skipQuestion() {
     if (!sessionID) {
         setBanner("sessionBanner", "No active session found.", "error");
@@ -187,9 +175,7 @@ function skipQuestion() {
             syncSkipButton();
         });
 }
-/*
- * Populates leaderboard.html with the top 20 sorted players and the current player's score.
-*/
+// Populates leaderboard.html with the top 20 sorted players and the current player's score
 function displayLeaderboard() {
     // Fall back to the saved cookie if sessionID isn't already in memory
     const activeSession = sessionID || getCookie("sessionID");
@@ -249,10 +235,7 @@ function displayLeaderboard() {
         })
         .catch(() => {});
 }
-/*
- * Starts a brand-new session via the /start endpoint, saves session metadata to cookies
- * for 7 days, switches to the question view, and loads the first question.
-*/
+// Starts a brand-new session via the /start endpoint, saves session metadata to cookies for 7 days, switches to the question view, and loads the first question
 function createNewSession(name) {
     setBanner("sessionBanner", "", "");
     const startingURL = `${API_BASE}/start?player=${encodeURIComponent(name)}&app=${encodeURIComponent(appName)}&treasure-hunt-id=${encodeURIComponent(treasureHuntID)}`;
@@ -285,9 +268,7 @@ function createNewSession(name) {
             showView("playerNameEntry");
         });
 }
-/*
- * Restores playerName and sessionID from cookies and resumes gameplay.
-*/
+// Restores playerName and sessionID from cookies and resumes gameplay
 function resumeSavedSession() {
     playerName = getCookie("playerName");
     sessionID = getCookie("sessionID");
@@ -295,18 +276,13 @@ function resumeSavedSession() {
     showView("answerContainer");
     fetchQuestion();
 }
-/*
- * Clears existing cookies and shows the player name form to begin a fresh game.
-*/
+// Clears existing cookies and shows the player name form to begin a fresh game
 function startFreshSessionPrompt() {
     clearSessionCookies();
     setBanner("sessionBanner", "", "");
     showView("playerNameEntry");
 }
-/*
- * Entry point for start.html: validates that a hunt UUID is present in the URL,
- * then decides whether to offer resuming a saved session or prompt for a player name.
-*/
+// Entry point for start.html: validates that a hunt UUID is present in the URL, then decides whether to offer resuming a saved session or prompt for a player name
 function startGame() {
     if (!treasureHuntID) {
         setBanner("sessionBanner", "No treasure hunt selected. Returning to hunt list...", "error");
@@ -331,9 +307,7 @@ function startGame() {
         showView("playerNameEntry");
     }
 }
-/*
- * Form handler for #playerNameForm: validates input and triggers session creation.
-*/
+// Form handler for #playerNameForm: validates input and triggers session creation
 function getPlayerNameEntry() {
     const value = document.getElementById("playerName").value.trim();
     if (value === "") {
@@ -342,16 +316,12 @@ function getPlayerNameEntry() {
     }
     createNewSession(value);
 }
-/*
- * Resets all session cookies and returns the user to the hunt selection page.
-*/
+// Resets all session cookies and returns the user to the hunt selection page
 function refreshGame() {
     clearSessionCookies();
     location.href = "app.html";
 }
-/*
- *Automatically initialize gameplay when loaded on a page containing the play UI (start.html)
-*/
+// Automatically initialize gameplay when loaded on a page containing the play UI (start.html)
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("playerNameEntry") && document.getElementById("answerContainer")) {
         startGame();
