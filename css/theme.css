@@ -358,3 +358,64 @@ a {
     padding: 32px 16px;
     color: var(--text-muted);
 }
+
+/* Question Display & Dynamic Input Controls */
+.question-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.question-text {
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin: 0 0 16px;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.question-link-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mcq-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.choice-btn {
+    padding: 16px 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--border-color);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.14s ease;
+}
+
+.choice-btn:hover {
+    border-color: var(--accent-primary);
+    background: #e0f2fe;
+}
+
+.choice-btn.selected {
+    border-color: var(--accent-primary);
+    background: var(--accent-primary);
+    color: #ffffff;
+}
+
+.boolean-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+}

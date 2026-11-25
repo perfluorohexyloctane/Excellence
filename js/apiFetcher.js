@@ -1,16 +1,20 @@
 // Excellence Treasure Hunt - Core API Session & Question Controller
 const API_BASE = "https://codecyprus.org/th/api";
+
 // Runtime state variables for the active player and current question
 let sessionID = "";
 let canBeSkipped = false;
 let currentQuestion = null;
+let selectedChoiceAnswer = "";
 let playerName = "";
+
 // Parse query parameters passed in the URL (e.g. start.html?uuid=...&name=...&duration=...)
 const params = new URLSearchParams(location.search);
 const treasureHuntID = params.get("uuid") || "";
 const appName = params.get("app") || "ExcellenceApp";
 const huntNameParam = params.get("name") || "Treasure Hunt";
 const huntDurationParam = Number(params.get("duration") || 0);
+
 /*
  Displays or clears a status/error banner on the page
  @param {string} elementId - The ID of the banner element (e.g., "sessionBanner", "resultMessage")
@@ -20,6 +24,7 @@ const huntDurationParam = Number(params.get("duration") || 0);
 function setBanner(elementId, message, type) {
     const el = document.getElementById(elementId);
     if (!el) return;
+
     // Reset and hide banner if no message is provided
     if (!message) {
         el.className = "status-banner";
@@ -29,6 +34,7 @@ function setBanner(elementId, message, type) {
     el.className = `status-banner visible ${type || "info"}`;
     el.textContent = message;
 }
+
 //Switches the visible UI card on start.html by showing only the requested section and hiding the remaining two.
 function showView(viewId) {
     ["resumeSessionCard", "playerNameEntry", "answerContainer"].forEach((id) => {
@@ -36,6 +42,7 @@ function showView(viewId) {
         if (el) el.style.display = id === viewId ? "block" : "none";
     });
 }
+
 //Removes all saved treasure hunt session cookies (uses deleteCookie from cookies.js)
 function clearSessionCookies() {
     deleteCookie("playerName");
@@ -44,6 +51,109 @@ function clearSessionCookies() {
     deleteCookie("sessionStartedAt");
     deleteCookie("huntMaxDuration");
 }
+
+/**
+ * Extracts http/https URLs from question text so users can open external clues in a new tab.
+ */
+function extractUrlsFromText(text) {
+    if (!text) return [];
+    const plain = text.replace(/<[^>]+>/g, " ");
+    const matches = plain.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+    return [...new Set(matches.map((u) => u.replace(/[.,);!?]+$/, "")))];
+}
+
+function renderQuestionLinks(questionText) {
+    const box = document.getElementById("questionLinks");
+    if (!box) return;
+    const urls = extractUrlsFromText(questionText);
+    box.innerHTML = "";
+    if (urls.length === 0) {
+        box.style.display = "none";
+        return;
+    }
+    box.style.display = "flex";
+    urls.forEach((url, idx) => {
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.className = "btn btn-secondary";
+        a.textContent = urls.length > 1 ? `Open Clue Link #${idx + 1}` : "Open Clue Link";
+        box.appendChild(a);
+    });
+}
+
+/**
+ * Renders the appropriate input control for the CodeCyprus questionType:
+ * BOOLEAN, MCQ, INTEGER, NUMERIC, or TEXT.
+ */
+function renderDynamicInput(questionType) {
+    const container = document.getElementById("dynamicAnswerInput");
+    if (!container) return;
+    selectedChoiceAnswer = "";
+    const type = (questionType || "TEXT").toUpperCase();
+
+    const typeBadge = document.getElementById("questionTypeBadge");
+    if (typeBadge) typeBadge.textContent = type;
+
+    if (type === "MCQ") {
+        container.innerHTML = `
+      <div class="mcq-grid" role="group" aria-label="Multiple choice options">
+        ${["A", "B", "C", "D"].map((letter) =>
+            `<button type="button" class="choice-btn" data-value="${letter}" onclick="selectChoice('${letter}', this)">Option ${letter}</button>`
+        ).join("")}
+      </div>
+      <input type="hidden" id="userAnswer" value="">
+    `;
+    } else if (type === "BOOLEAN") {
+        container.innerHTML = `
+      <div class="boolean-grid" role="group" aria-label="True or False">
+        <button type="button" class="choice-btn" data-value="True" onclick="selectChoice('True', this)">True</button>
+        <button type="button" class="choice-btn" data-value="False" onclick="selectChoice('False', this)">False</button>
+      </div>
+      <input type="hidden" id="userAnswer" value="">
+    `;
+    } else if (type === "INTEGER") {
+        container.innerHTML = `
+      <input type="number" step="1" inputmode="numeric" id="userAnswer" class="input-field" placeholder="Enter a whole number (e.g. 42)" autocomplete="off">
+    `;
+    } else if (type === "NUMERIC") {
+        container.innerHTML = `
+      <input type="number" step="any" inputmode="decimal" id="userAnswer" class="input-field" placeholder="Enter a number (e.g. 3.14)" autocomplete="off">
+    `;
+    } else {
+        container.innerHTML = `
+      <input type="text" id="userAnswer" class="input-field" placeholder="Type your answer here..." autocomplete="off">
+    `;
+    }
+}
+
+function selectChoice(val, btnEl) {
+    selectedChoiceAnswer = val;
+    const hidden = document.getElementById("userAnswer");
+    if (hidden) hidden.value = val;
+    document.querySelectorAll("#dynamicAnswerInput .choice-btn").forEach((b) => b.classList.remove("selected"));
+    if (btnEl) btnEl.classList.add("selected");
+}
+
+function validateAnswerByType(answer, questionType) {
+    const type = (questionType || "TEXT").toUpperCase();
+    if (!answer) return "Please provide an answer before submitting.";
+    if (type === "INTEGER" && !/^-?\d+$/.test(answer)) {
+        return "This question requires a whole integer (e.g., 7 or -2).";
+    }
+    if (type === "NUMERIC" && isNaN(Number(answer))) {
+        return "This question requires a valid decimal number (e.g., 2.5).";
+    }
+    if (type === "BOOLEAN" && !["true", "false"].includes(answer.toLowerCase())) {
+        return "Please choose True or False.";
+    }
+    if (type === "MCQ" && !["A", "B", "C", "D"].includes(answer.toUpperCase())) {
+        return "Please select option A, B, C, or D.";
+    }
+    return "";
+}
+
 /*
  Fetches the current question from the /question endpoint using the active sessionID.
  Redirects to leaderboard.html if the hunt is completed, or resets to name entry if expired.
@@ -66,9 +176,18 @@ function fetchQuestion() {
                 currentQuestion = questionData;
                 canBeSkipped = Boolean(questionData.canBeSkipped);
                 syncSkipButton();
+
                 // Render the question text (supports HTML formatting returned by the API)
                 const qEl = document.getElementById("q");
                 if (qEl) qEl.innerHTML = questionData.questionText;
+
+                const ptsBadge = document.getElementById("questionPointsBadge");
+                if (ptsBadge && typeof questionData.correctScore === "number") {
+                    ptsBadge.textContent = `+${questionData.correctScore} / ${questionData.wrongScore} pts`;
+                }
+
+                renderQuestionLinks(questionData.questionText);
+                renderDynamicInput(questionData.questionType);
             } else {
                 // Session is invalid or expired on the server: clear cookies and prompt for a new session
                 const msg = (questionData.errorMessages || ["Session invalid or expired."]).join(" ");
@@ -81,10 +200,12 @@ function fetchQuestion() {
             setBanner("sessionBanner", `Network error while loading question: ${error.message}`, "error");
         });
 }
+
 //Submits the user's typed answer to the /answer endpoint and handles feedback, progression to the next question, or redirection on hunt completion/timeout
 function submitUserAnswer() {
     const input = document.getElementById("userAnswer");
     const answer = input ? input.value.trim() : "";
+
     // Prevent submitting blank answers
     if (!answer) {
         setBanner("resultMessage", "Please enter an answer before submitting.", "error");
@@ -101,6 +222,7 @@ function submitUserAnswer() {
             if (answerData.status === "OK") {
                 // Show API feedback ("success" if correct, "error" if incorrect)
                 setBanner("resultMessage", answerData.message, answerData.correct ? "success" : "error");
+
                 // Redirect if this answer finished the treasure hunt
                 if (answerData.completed) {
                     location.href = "leaderboard.html";
@@ -125,6 +247,7 @@ function submitUserAnswer() {
             setBanner("resultMessage", `Could not submit answer: ${error.message}`, "error");
         });
 }
+
 // Enables/disables and shows/hides the Skip Question button based on canBeSkipped
 function syncSkipButton() {
     const skipBtn = document.getElementById("skipBtn");
@@ -132,6 +255,7 @@ function syncSkipButton() {
     skipBtn.disabled = !canBeSkipped;
     skipBtn.style.display = canBeSkipped ? "inline-block" : "none";
 }
+
 // Calls the /skip endpoint to bypass the current question if skipping is allowed
 function skipQuestion() {
     if (!sessionID) {
@@ -175,6 +299,7 @@ function skipQuestion() {
             syncSkipButton();
         });
 }
+
 // Populates leaderboard.html with the top 20 sorted players and the current player's score
 function displayLeaderboard() {
     // Fall back to the saved cookie if sessionID isn't already in memory
@@ -185,6 +310,7 @@ function displayLeaderboard() {
     }
     const leaderboardURL = `${API_BASE}/leaderboard?session=${encodeURIComponent(activeSession)}&sorted&limit=20`;
     const scoreURL = `${API_BASE}/score?session=${encodeURIComponent(activeSession)}`;
+
     // 1. Fetch and render the sorted leaderboard table
     fetch(leaderboardURL)
         .then((response) => {
@@ -235,6 +361,7 @@ function displayLeaderboard() {
         })
         .catch(() => {});
 }
+
 // Starts a brand-new session via the /start endpoint, saves session metadata to cookies for 7 days, switches to the question view, and loads the first question
 function createNewSession(name) {
     setBanner("sessionBanner", "", "");
@@ -268,6 +395,7 @@ function createNewSession(name) {
             showView("playerNameEntry");
         });
 }
+
 // Restores playerName and sessionID from cookies and resumes gameplay
 function resumeSavedSession() {
     playerName = getCookie("playerName");
@@ -276,12 +404,14 @@ function resumeSavedSession() {
     showView("answerContainer");
     fetchQuestion();
 }
+
 // Clears existing cookies and shows the player name form to begin a fresh game
 function startFreshSessionPrompt() {
     clearSessionCookies();
     setBanner("sessionBanner", "", "");
     showView("playerNameEntry");
 }
+
 // Entry point for start.html: validates that a hunt UUID is present in the URL, then decides whether to offer resuming a saved session or prompt for a player name
 function startGame() {
     if (!treasureHuntID) {
@@ -307,6 +437,7 @@ function startGame() {
         showView("playerNameEntry");
     }
 }
+
 // Form handler for #playerNameForm: validates input and triggers session creation
 function getPlayerNameEntry() {
     const value = document.getElementById("playerName").value.trim();
@@ -316,6 +447,7 @@ function getPlayerNameEntry() {
     }
     createNewSession(value);
 }
+
 // Resets all session cookies and returns the user to the hunt selection page
 function refreshGame() {
     clearSessionCookies();
