@@ -7,6 +7,7 @@ let canBeSkipped = false;
 let currentQuestion = null;
 let selectedChoiceAnswer = "";
 let playerName = "";
+let timerIntervalId = null;
 
 // Parse query parameters passed in the URL (e.g. start.html?uuid=...&name=...&duration=...)
 const params = new URLSearchParams(location.search);
@@ -154,6 +155,97 @@ function validateAnswerByType(answer, questionType) {
     return "";
 }
 
+function formatCountdown(ms) {
+    if (ms <= 0) return "00:00";
+    const totalSec = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+function startHuntTimer() {
+    if (timerIntervalId) clearInterval(timerIntervalId);
+    const timerEl = document.getElementById("huntTimer");
+    if (!timerEl) return;
+
+    const startedAt = Number(getCookie("sessionStartedAt") || Date.now());
+    const maxDuration = Number(getCookie("huntMaxDuration") || huntDurationParam || 0);
+    if (!maxDuration || maxDuration <= 0) {
+        timerEl.textContent = "Untimed";
+        return;
+    }
+
+    const update = () => {
+        const remaining = startedAt + maxDuration - Date.now();
+        timerEl.textContent = formatCountdown(remaining);
+        if (remaining <= 120000) {
+            timerEl.classList.add("timer-low");
+        } else {
+            timerEl.classList.remove("timer-low");
+        }
+        if (remaining <= 0) {
+            clearInterval(timerIntervalId);
+            setBanner("sessionBanner", "Time is up! Redirecting to the final leaderboard...", "error");
+        }
+    };
+    update();
+    timerIntervalId = setInterval(update, 1000);
+}
+
+function fetchLiveScore() {
+    if (!sessionID) return;
+    fetch(`${API_BASE}/score?session=${encodeURIComponent(sessionID)}`)
+        .then((r) => r.json())
+        .then((data) => {
+            if (data.status === "OK") {
+                const scoreEl = document.getElementById("liveScore");
+                if (scoreEl) scoreEl.textContent = data.score;
+            }
+        })
+        .catch(() => {});
+}
+
+function skipCurrentQuestion() {
+    if (!canBeSkipped) {
+        setBanner("resultMessage", "This question cannot be skipped.", "error");
+        return;
+    }
+    const penalty = currentQuestion && typeof currentQuestion.skipScore === "number"
+        ? currentQuestion.skipScore
+        : -5;
+    if (!confirm(`Skip this question? (${penalty} points)`)) {
+        return;
+    }
+
+    const skipURL = `${API_BASE}/skip?session=${encodeURIComponent(sessionID)}`;
+    fetch(skipURL)
+        .then((response) => {
+            if (!response.ok) throw new Error(`Skip API error (${response.status})`);
+            return response.json();
+        })
+        .then((skipData) => {
+            if (skipData.status === "OK") {
+                setBanner("resultMessage", skipData.message || "Question skipped.", "info");
+                if (skipData.completed) {
+                    location.href = "leaderboard.html";
+                    return;
+                }
+                fetchLiveScore();
+                fetchQuestion();
+            } else {
+                const errorText = (skipData.errorMessages || ["Unable to skip."]).join(", ");
+                if (errorText.includes("Finished session") || errorText.includes("run out of time")) {
+                    location.href = "leaderboard.html";
+                    return;
+                }
+                setBanner("resultMessage", `Error: ${errorText}`, "error");
+            }
+        })
+        .catch((error) => {
+            setBanner("resultMessage", `Could not skip question: ${error.message}`, "error");
+        });
+}
+
 /*
  Fetches the current question from the /question endpoint using the active sessionID.
  Redirects to leaderboard.html if the hunt is completed, or resets to name entry if expired.
@@ -175,7 +267,6 @@ function fetchQuestion() {
                 // Store current question details and update the Skip button visibility
                 currentQuestion = questionData;
                 canBeSkipped = Boolean(questionData.canBeSkipped);
-                syncSkipButton();
 
                 // Render the question text (supports HTML formatting returned by the API)
                 const qEl = document.getElementById("q");
@@ -186,8 +277,27 @@ function fetchQuestion() {
                     ptsBadge.textContent = `+${questionData.correctScore} / ${questionData.wrongScore} pts`;
                 }
 
+                const total = questionData.numOfQuestions || 1;
+                const idx = (questionData.currentQuestionIndex || 0) + 1;
+                const progEl = document.getElementById("questionProgress");
+                if (progEl) progEl.textContent = `${idx} / ${total}`;
+                const fillEl = document.getElementById("progressFill");
+                if (fillEl) fillEl.style.width = `${Math.min(100, Math.round(((idx - 1) / total) * 100))}%`;
+
+                const skipBtn = document.getElementById("skipBtn");
+                if (skipBtn) {
+                    if (canBeSkipped) {
+                        skipBtn.style.display = "inline-flex";
+                        const pen = typeof questionData.skipScore === "number" ? questionData.skipScore : -5;
+                        skipBtn.textContent = `Skip (${pen} pts)`;
+                    } else {
+                        skipBtn.style.display = "none";
+                    }
+                }
+
                 renderQuestionLinks(questionData.questionText);
                 renderDynamicInput(questionData.questionType);
+                fetchLiveScore();
             } else {
                 // Session is invalid or expired on the server: clear cookies and prompt for a new session
                 const msg = (questionData.errorMessages || ["Session invalid or expired."]).join(" ");
@@ -206,9 +316,9 @@ function submitUserAnswer() {
     const input = document.getElementById("userAnswer");
     const answer = input ? input.value.trim() : "";
 
-    // Prevent submitting blank answers
-    if (!answer) {
-        setBanner("resultMessage", "Please enter an answer before submitting.", "error");
+    const validationError = validateAnswerByType(answer, currentQuestion ? currentQuestion.questionType : "TEXT");
+    if (validationError) {
+        setBanner("resultMessage", validationError, "error");
         return;
     }
 
@@ -230,8 +340,9 @@ function submitUserAnswer() {
                 }
                 // On a correct answer, clear the input field and load the next question
                 if (answerData.correct) {
-                    if (input) input.value = "";
                     fetchQuestion();
+                } else {
+                    fetchLiveScore();
                 }
             } else {
                 const errorText = (answerData.errorMessages || ["Unknown error"]).join(", ");
@@ -248,58 +359,6 @@ function submitUserAnswer() {
         });
 }
 
-// Enables/disables and shows/hides the Skip Question button based on canBeSkipped
-function syncSkipButton() {
-    const skipBtn = document.getElementById("skipBtn");
-    if (!skipBtn) return;
-    skipBtn.disabled = !canBeSkipped;
-    skipBtn.style.display = canBeSkipped ? "inline-block" : "none";
-}
-
-// Calls the /skip endpoint to bypass the current question if skipping is allowed
-function skipQuestion() {
-    if (!sessionID) {
-        setBanner("sessionBanner", "No active session found.", "error");
-        return;
-    }
-    if (!canBeSkipped) {
-        setBanner("resultMessage", "This question cannot be skipped.", "error");
-        return;
-    }
-    // Temporarily disable button to prevent duplicate skip requests while fetching
-    const skipBtn = document.getElementById("skipBtn");
-    if (skipBtn) skipBtn.disabled = true;
-
-    const skipURL = `${API_BASE}/skip?session=${encodeURIComponent(sessionID)}`;
-    fetch(skipURL)
-        .then((response) => {
-            if (!response.ok) throw new Error(`Skip API error (${response.status})`);
-            return response.json();
-        })
-        .then((skipData) => {
-            if (skipData.status === "OK") {
-                setBanner("resultMessage", skipData.message || "Question skipped.", "info");
-                // Clear any partial answer typed before skipping
-                const input = document.getElementById("userAnswer");
-                if (input) input.value = "";
-                // Redirect if skipping the final question completed the hunt
-                if (skipData.completed) {
-                    location.href = "leaderboard.html";
-                    return;
-                }
-                fetchQuestion();
-            } else {
-                const msg = (skipData.errorMessages || ["Could not skip question."]).join(" ");
-                setBanner("resultMessage", msg, "error");
-                syncSkipButton();
-            }
-        })
-        .catch((error) => {
-            setBanner("resultMessage", `Network error while skipping question: ${error.message}`, "error");
-            syncSkipButton();
-        });
-}
-
 // Populates leaderboard.html with the top 20 sorted players and the current player's score
 function displayLeaderboard() {
     // Fall back to the saved cookie if sessionID isn't already in memory
@@ -313,10 +372,7 @@ function displayLeaderboard() {
 
     // 1. Fetch and render the sorted leaderboard table
     fetch(leaderboardURL)
-        .then((response) => {
-            if (!response.ok) throw new Error(`Leaderboard API error (${response.status})`);
-            return response.json();
-        })
+        .then((response) => response.json())
         .then((leaderboardData) => {
             if (leaderboardData.status === "OK") {
                 document.getElementById("leaderboardHeader").innerText = leaderboardData.treasureHuntName;
@@ -326,6 +382,7 @@ function displayLeaderboard() {
                 const tableBody = document.getElementById("usersTableBody");
                 tableHeader.innerHTML = "";
                 tableBody.innerHTML = "";
+
                 // Build table header row
                 const headerRow = document.createElement("tr");
                 ["#", "Name", "Score", "Completion Date"].forEach((headData) => {
@@ -334,6 +391,7 @@ function displayLeaderboard() {
                     headerRow.appendChild(header);
                 });
                 tableHeader.appendChild(headerRow);
+
                 // Build a row for each player entry
                 users.forEach((user, idx) => {
                     const row = document.createElement("tr");
@@ -348,6 +406,7 @@ function displayLeaderboard() {
             }
         })
         .catch(() => {});
+
     // 2. Fetch and display the current player's individual score and name
     fetch(scoreURL)
         .then((response) => response.json())
@@ -375,6 +434,7 @@ function createNewSession(name) {
             if (startData.status === "OK") {
                 sessionID = startData.session;
                 playerName = name;
+
                 // Persist session details in cookies for 7 days so progress survives reloads
                 setCookie("playerName", playerName, 7);
                 setCookie("sessionID", sessionID, 7);
@@ -402,6 +462,7 @@ function resumeSavedSession() {
     sessionID = getCookie("sessionID");
     setBanner("sessionBanner", `Resumed session for ${playerName}.`, "info");
     showView("answerContainer");
+    startHuntTimer();
     fetchQuestion();
 }
 
@@ -422,6 +483,7 @@ function startGame() {
 
     const titleEl = document.getElementById("entryHuntTitle");
     if (titleEl) titleEl.textContent = huntNameParam;
+
     // Check cookies for an existing session matching the selected treasure hunt
     const savedName = getCookie("playerName");
     const savedSession = getCookie("sessionID");

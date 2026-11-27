@@ -53,20 +53,44 @@
 
     <!-- Active Question Container -->
     <section id="answerContainer" class="card" style="display: none;">
+        <div class="hud-bar" aria-label="Game statistics">
+            <div class="hud-stat">
+                <span class="hud-label">Score</span>
+                <span id="liveScore" class="hud-value">0</span>
+            </div>
+            <div class="hud-stat">
+                <span class="hud-label">Progress</span>
+                <span id="questionProgress" class="hud-value">-- / --</span>
+            </div>
+            <div class="hud-stat">
+                <span class="hud-label">Time Left</span>
+                <span id="huntTimer" class="hud-value">--:--</span>
+            </div>
+        </div>
+
+        <div class="progress-track" aria-hidden="true">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
+
         <div class="question-meta">
             <span id="questionTypeBadge" class="badge badge-active">TEXT</span>
             <span id="questionPointsBadge" class="badge">Points: --</span>
         </div>
-        <h1 id="q" class="question-text">Loading question...</h1>
+        <div id="q" class="question-text">Loading question...</div>
         <div id="questionLinks" class="question-link-box" style="display: none;"></div>
 
         <form id="answerForm" onsubmit="event.preventDefault(); submitUserAnswer();">
             <div id="dynamicAnswerInput">
-                <input type="text" id="userAnswer" class="input-field" placeholder="Enter your answer here" autocomplete="off">
+                <label for="userAnswer"></label><input type="text" id="userAnswer" class="input-field" placeholder="Enter your answer here" autocomplete="off">
             </div>
-            <button type="submit" id="submitAnswerBtn" class="btn btn-primary">Submit Answer</button>
-            <button type="button" id="skipBtn" class="btn btn-secondary" onclick="skipQuestion()" style="display: none;">Skip Question</button>
+            <button type="submit" id="submitAnswerBtn" class="btn btn-primary btn-block">Submit Answer</button>
         </form>
+
+        <div class="action-row">
+            <button type="button" id="skipBtn" class="btn btn-secondary" style="display: none;" onclick="skipCurrentQuestion()">Skip Question</button>
+            <a href="leaderboard.html" class="btn btn-secondary">Leaderboard</a>
+        </div>
+
         <p id="resultMessage" class="status-banner" style="margin-top: 12px;"></p>
     </section>
 </main>
